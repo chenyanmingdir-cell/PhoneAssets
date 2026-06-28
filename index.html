@@ -821,7 +821,13 @@ body::before {
 <div id="modalContainer"></div>
 <div id="toastContainer"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
+// ===== SUPABASE =====
+const SUPABASE_URL = 'https://pqdrdpidyxxbwphstdpz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZHJkcGlkeXh4YndwaHN0ZHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDY2MTQsImV4cCI6MjA5NjIyMjYxNH0.Z5AfS0ZOIJ4b_WNG81YYvl5jegP2Y4kEuOo2XUqn8Wc';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 // ===== CONSTANTS =====
 const CATEGORIES = {
   '📱 手机': '📱',
@@ -850,12 +856,10 @@ const CATEGORY_DISPLAY_ICONS = {
 
 const STORAGE_KEY = 'phoneassets_data';
 const UID_KEY = 'phoneassets_uid';
-const API_BASE = '/api/data';
 
 // ===== STATE =====
 let assets = [];
 let editingId = null;
-let syncTimer = null;
 
 // ===== UID =====
 function getOrCreateUID() {
@@ -883,40 +887,44 @@ function loadAssets() {
 
 function saveAssets() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
-  syncToServer();
+  syncToSupabase();
 }
 
-// ===== SYNC =====
-async function syncToServer() {
+function saveAssetsSilent() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
+}
+
+// ===== SUPABASE SYNC =====
+async function syncToSupabase() {
   const uid = getUID();
-  if (!uid || assets.length === 0) return;
+  if (!uid) return;
 
   setSyncStatus('syncing', '同步中...');
   try {
-    const resp = await fetch(`${API_BASE}?uid=${encodeURIComponent(uid)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: assets })
-    });
-    if (resp.ok) {
-      setSyncStatus('synced', '已同步到云端');
-    } else {
-      throw new Error('sync failed');
-    }
+    const { error } = await supabase
+      .from('workspaces')
+      .upsert({
+        id: `phoneassets-${uid}`,
+        name: 'PhoneAssets',
+        data: assets,
+        created_at: new Date().toISOString()
+      });
+    if (error) throw error;
+    setSyncStatus('synced', '已同步到云端');
   } catch {
     setSyncStatus('error', '同步失败，数据仅存本地');
   }
 }
 
-async function loadFromServer() {
-  const uid = getUID();
-  if (!uid) return null;
-
+async function loadFromSupabase(uid) {
   try {
-    const resp = await fetch(`${API_BASE}?uid=${encodeURIComponent(uid)}`);
-    if (!resp.ok) throw new Error('fetch failed');
-    const json = await resp.json();
-    return json.data || [];
+    const { data, error } = await supabase
+      .from('workspaces')
+      .select('data')
+      .eq('id', `phoneassets-${uid}`)
+      .single();
+    if (error) return null;
+    return data?.data || [];
   } catch {
     return null;
   }
@@ -997,25 +1005,18 @@ async function doRecover() {
   const code = input.value.trim().toUpperCase();
   if (!code) { showToast('请输入恢复码'); return; }
 
-  try {
-    const resp = await fetch(`${API_BASE}?uid=${encodeURIComponent(code)}`);
-    if (!resp.ok) throw new Error('not found');
-    const json = await resp.json();
-    if (!Array.isArray(json.data) || json.data.length === 0) {
-      showToast('未找到数据，请检查恢复码');
-      return;
-    }
-    // Restore
-    localStorage.setItem(UID_KEY, code);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data));
-    assets = json.data;
-    document.getElementById('recoveryOverlay').remove();
-    renderAll();
-    setSyncStatus('synced', '已从云端恢复 ' + json.data.length + ' 件物品');
-    showToast('已找回 ' + json.data.length + ' 件物品 ✓');
-  } catch {
-    showToast('找回失败，请检查恢复码');
+  const serverData = await loadFromSupabase(code);
+  if (!serverData || serverData.length === 0) {
+    showToast('未找到数据，请检查恢复码');
+    return;
   }
+  localStorage.setItem(UID_KEY, code);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(serverData));
+  assets = serverData;
+  document.getElementById('recoveryOverlay').remove();
+  renderAll();
+  setSyncStatus('synced', '已从云端恢复 ' + serverData.length + ' 件物品');
+  showToast('已找回 ' + serverData.length + ' 件物品 ✓');
 }
 
 // ===== HELPERS =====
@@ -1380,36 +1381,31 @@ async function init() {
   const uid = getOrCreateUID();
   loadAssets();
 
-  // If local has data, show it immediately, then check server
   if (assets.length > 0) {
+    // Local has data — show immediately, sync to cloud
     renderAll();
-    setSyncStatus('syncing', '检查云端...');
-    syncToServer();
+    setSyncStatus('syncing', '同步到云端...');
+    syncToSupabase();
   } else {
-    // No local data — try to recover from server
+    // No local data — try to recover from Supabase
     setSyncStatus('syncing', '查找云端数据...');
-    const serverData = await loadFromServer();
+    const serverData = await loadFromSupabase(uid);
     if (serverData && serverData.length > 0) {
       assets = serverData;
       saveAssetsSilent();
-      showToast('已从云端恢复 ' + serverData.length + ' 件物品');
+      renderAll();
+      setSyncStatus('synced', '已从云端加载');
     } else {
-      setSyncStatus('error', '数据仅存本地');
+      renderAll();
+      setSyncStatus('error', '暂无数据 · 有恢复码？');
+      document.getElementById('syncRecovery').onclick = showRecoveryInput;
     }
   }
 
-  renderAll();
-
-  // If no data at all, show recovery input option
-  if (assets.length === 0) {
-    setSyncStatus('error', '暂无数据 · 有恢复码？');
-    document.getElementById('syncRecovery').style.display = 'inline';
-    document.getElementById('syncRecovery').onclick = showRecoveryInput;
+  if (assets.length > 0) {
+    // Update recovery link for existing users
+    document.getElementById('syncRecovery').onclick = showRecoveryInfo;
   }
-}
-
-function saveAssetsSilent() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
 }
 
 init();
