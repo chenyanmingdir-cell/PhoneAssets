@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="PhoneAssets">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
 <title>PhoneAssets · 我的固定资产</title>
 <style>
 /* ===== FONTS ===== */
@@ -88,6 +89,13 @@ body::before {
 .header {
   padding: 48px 0 8px;
   position: relative;
+}
+
+.header-logo {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 2px 8px rgba(200,168,119,0.15));
 }
 
 .header-date {
@@ -656,6 +664,7 @@ body::before {
 
 <div class="app">
   <header class="header">
+    <img class="header-logo" src="logo.svg" alt="PhoneAssets" width="48" height="48">
     <div class="header-date" id="headerDate"></div>
     <h1 class="header-title">PhoneAssets<span>我的固定资产</span></h1>
   </header>
@@ -1058,9 +1067,10 @@ function setManifest() {
     background_color: '#1a1410',
     theme_color: '#1a1410',
     icons: [{
-      src: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="#1a1410"/><text x="96" y="110" text-anchor="middle" font-size="90" font-family="serif" fill="#c8a877">📦</text></svg>'),
-      sizes: '192x192',
-      type: 'image/svg+xml'
+      src: 'logo.svg',
+      sizes: '512x512',
+      type: 'image/svg+xml',
+      purpose: 'any maskable'
     }]
   };
 
