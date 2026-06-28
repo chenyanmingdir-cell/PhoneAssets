@@ -196,6 +196,109 @@ body::before {
   margin-top: 2px;
 }
 
+/* ===== SYNC ===== */
+.sync-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(200,168,119,0.08);
+}
+
+.sync-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--ink-muted);
+  transition: background 0.3s ease;
+}
+
+.sync-dot.synced { background: var(--green-soft); }
+.sync-dot.syncing { background: var(--gold); animation: pulse 1s ease-in-out infinite; }
+.sync-dot.error { background: var(--red-soft); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.sync-text {
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+  letter-spacing: 0.04em;
+}
+
+.sync-recovery {
+  font-size: 0.68rem;
+  color: var(--gold-dim);
+  cursor: pointer;
+  margin-left: auto;
+  letter-spacing: 0.04em;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sync-recovery:active {
+  color: var(--gold);
+}
+
+/* ===== RECOVERY MODAL ===== */
+.recovery-icon {
+  font-size: 3rem;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.recovery-code {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  color: var(--gold);
+  text-align: center;
+  letter-spacing: 0.12em;
+  padding: 14px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px dashed rgba(200,168,119,0.25);
+  margin: 16px 0;
+  user-select: all;
+  word-break: break-all;
+}
+
+.recovery-hint {
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.recovery-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid rgba(200,168,119,0.2);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  text-align: center;
+  letter-spacing: 0.08em;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.recovery-input:focus {
+  border-color: rgba(200,168,119,0.5);
+}
+
+.recovery-input::placeholder {
+  color: var(--ink-muted);
+  font-family: var(--font-body);
+  letter-spacing: 0.04em;
+  font-size: 0.85rem;
+}
+
 /* ===== CATEGORY GROUP ===== */
 .category-group {
   margin-bottom: 28px;
@@ -694,7 +797,15 @@ body::before {
         <span class="total-meta-value" id="earliestDate">—</span>
       </div>
     </div>
+    <div class="sync-row" id="syncRow">
+      <span class="sync-dot" id="syncDot"></span>
+      <span class="sync-text" id="syncText">数据仅存本地</span>
+      <span class="sync-recovery" id="syncRecovery" onclick="showRecoveryInfo()" style="display:none">恢复码 ›</span>
+    </div>
   </div>
+
+  <!-- Recovery Modal -->
+  <div id="recoveryModalContainer"></div>
 
   <div id="categoryList"></div>
 
@@ -738,10 +849,27 @@ const CATEGORY_DISPLAY_ICONS = {
 };
 
 const STORAGE_KEY = 'phoneassets_data';
+const UID_KEY = 'phoneassets_uid';
+const API_BASE = '/api/data';
 
 // ===== STATE =====
 let assets = [];
 let editingId = null;
+let syncTimer = null;
+
+// ===== UID =====
+function getOrCreateUID() {
+  let uid = localStorage.getItem(UID_KEY);
+  if (!uid) {
+    uid = 'PA-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    localStorage.setItem(UID_KEY, uid);
+  }
+  return uid;
+}
+
+function getUID() {
+  return localStorage.getItem(UID_KEY);
+}
 
 // ===== STORAGE =====
 function loadAssets() {
@@ -755,6 +883,139 @@ function loadAssets() {
 
 function saveAssets() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
+  syncToServer();
+}
+
+// ===== SYNC =====
+async function syncToServer() {
+  const uid = getUID();
+  if (!uid || assets.length === 0) return;
+
+  setSyncStatus('syncing', '同步中...');
+  try {
+    const resp = await fetch(`${API_BASE}?uid=${encodeURIComponent(uid)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: assets })
+    });
+    if (resp.ok) {
+      setSyncStatus('synced', '已同步到云端');
+    } else {
+      throw new Error('sync failed');
+    }
+  } catch {
+    setSyncStatus('error', '同步失败，数据仅存本地');
+  }
+}
+
+async function loadFromServer() {
+  const uid = getUID();
+  if (!uid) return null;
+
+  try {
+    const resp = await fetch(`${API_BASE}?uid=${encodeURIComponent(uid)}`);
+    if (!resp.ok) throw new Error('fetch failed');
+    const json = await resp.json();
+    return json.data || [];
+  } catch {
+    return null;
+  }
+}
+
+function setSyncStatus(status, text) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  const recovery = document.getElementById('syncRecovery');
+  if (dot) {
+    dot.className = 'sync-dot ' + status;
+    txt.textContent = text;
+    if (getUID()) recovery.style.display = 'inline';
+  }
+}
+
+// ===== RECOVERY =====
+function showRecoveryInfo() {
+  const uid = getUID();
+  if (!uid) return;
+  const html = `
+    <div class="modal-overlay" id="recoveryOverlay">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">你的恢复码</div>
+        <div class="recovery-icon">🔑</div>
+        <div class="recovery-code">${escapeHtml(uid)}</div>
+        <div class="recovery-hint">
+          截图或复制保存此恢复码。<br>
+          更换手机或重装 App 后，<br>
+          输入恢复码即可找回所有数据。
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-secondary" onclick="copyRecoveryCode()">复制恢复码</button>
+          <button class="btn btn-primary" onclick="document.getElementById('recoveryOverlay').remove()">知道了</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('recoveryModalContainer').innerHTML = html;
+  document.getElementById('recoveryOverlay').addEventListener('click', function(e) {
+    if (e.target === this) this.remove();
+  });
+}
+
+function copyRecoveryCode() {
+  const uid = getUID();
+  navigator.clipboard.writeText(uid).then(() => showToast('恢复码已复制 ✓')).catch(() => showToast('请长按手动复制'));
+}
+
+function showRecoveryInput() {
+  const html = `
+    <div class="modal-overlay" id="recoveryOverlay">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">找回数据</div>
+        <div class="recovery-icon">📥</div>
+        <div class="recovery-hint">
+          输入之前保存的恢复码，<br>找回你的资产数据。
+        </div>
+        <input class="recovery-input" id="recoveryInput" type="text" placeholder="输入恢复码，例如 PA-XXX-XXX" autocomplete="off" autocorrect="off" autocapitalize="characters">
+        <div class="form-actions" style="margin-top:16px">
+          <button class="btn btn-secondary" onclick="document.getElementById('recoveryOverlay').remove()">取消</button>
+          <button class="btn btn-primary" onclick="doRecover()">找回数据</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('recoveryModalContainer').innerHTML = html;
+  document.getElementById('recoveryOverlay').addEventListener('click', function(e) {
+    if (e.target === this) this.remove();
+  });
+  setTimeout(() => document.getElementById('recoveryInput')?.focus(), 400);
+}
+
+async function doRecover() {
+  const input = document.getElementById('recoveryInput');
+  const code = input.value.trim().toUpperCase();
+  if (!code) { showToast('请输入恢复码'); return; }
+
+  try {
+    const resp = await fetch(`${API_BASE}?uid=${encodeURIComponent(code)}`);
+    if (!resp.ok) throw new Error('not found');
+    const json = await resp.json();
+    if (!Array.isArray(json.data) || json.data.length === 0) {
+      showToast('未找到数据，请检查恢复码');
+      return;
+    }
+    // Restore
+    localStorage.setItem(UID_KEY, code);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data));
+    assets = json.data;
+    document.getElementById('recoveryOverlay').remove();
+    renderAll();
+    setSyncStatus('synced', '已从云端恢复 ' + json.data.length + ' 件物品');
+    showToast('已找回 ' + json.data.length + ' 件物品 ✓');
+  } catch {
+    showToast('找回失败，请检查恢复码');
+  }
 }
 
 // ===== HELPERS =====
@@ -1113,11 +1374,42 @@ function setManifest() {
 }
 
 // ===== INIT =====
-function init() {
+async function init() {
   setManifest();
   registerSW();
+  const uid = getOrCreateUID();
   loadAssets();
+
+  // If local has data, show it immediately, then check server
+  if (assets.length > 0) {
+    renderAll();
+    setSyncStatus('syncing', '检查云端...');
+    syncToServer();
+  } else {
+    // No local data — try to recover from server
+    setSyncStatus('syncing', '查找云端数据...');
+    const serverData = await loadFromServer();
+    if (serverData && serverData.length > 0) {
+      assets = serverData;
+      saveAssetsSilent();
+      showToast('已从云端恢复 ' + serverData.length + ' 件物品');
+    } else {
+      setSyncStatus('error', '数据仅存本地');
+    }
+  }
+
   renderAll();
+
+  // If no data at all, show recovery input option
+  if (assets.length === 0) {
+    setSyncStatus('error', '暂无数据 · 有恢复码？');
+    document.getElementById('syncRecovery').style.display = 'inline';
+    document.getElementById('syncRecovery').onclick = showRecoveryInput;
+  }
+}
+
+function saveAssetsSilent() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
 }
 
 init();
