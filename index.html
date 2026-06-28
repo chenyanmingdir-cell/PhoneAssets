@@ -1053,7 +1053,7 @@ function registerSW() {
   if (!('serviceWorker' in navigator)) return;
 
   const swCode = `
-const CACHE = 'phoneassets-v1';
+const CACHE = 'phoneassets-v2';
 const URLS = ['/'];
 
 self.addEventListener('install', e => {
@@ -1065,15 +1065,18 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Network-first: always try network, fall back to cache
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      return cached || fetch(e.request).then(resp => {
-        if (resp.ok) {
-          const clone = resp.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-        }
-        return resp;
-      }).catch(() => cached || new Response('Offline', {status: 503}));
+    fetch(e.request).then(resp => {
+      if (resp.ok) {
+        const clone = resp.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+      }
+      return resp;
+    }).catch(() => {
+      return caches.match(e.request).then(cached => {
+        return cached || new Response('Offline', {status: 503});
+      });
     })
   );
 });
