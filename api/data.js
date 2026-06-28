@@ -1,5 +1,4 @@
-// Use Vercel OIDC token + Blob REST API — no manual token needed
-const BLOB_BASE = 'https://blob.vercel-storage.com';
+import { put, list } from '@vercel/blob';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,20 +12,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing or invalid uid' });
   }
 
-  const storeId = process.env.BLOB_STORE_ID;
-  const token = process.env.VERCEL_OIDC_TOKEN;
-  if (!storeId || !token) {
-    return res.status(500).json({ error: 'Storage not configured' });
-  }
-
-  const pathname = `assets/${uid}.json`;
-  const url = `${BLOB_BASE}/${storeId}/${pathname}`;
+  const blobPath = `assets/${uid}.json`;
 
   if (req.method === 'GET') {
     try {
-      const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      if (resp.status === 404) return res.status(200).json({ data: [] });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const { blobs } = await list({ prefix: blobPath, limit: 1 });
+      const blob = blobs.find(b => b.pathname === blobPath);
+      if (!blob) return res.status(200).json({ data: [] });
+      const resp = await fetch(blob.url);
       const data = await resp.json();
       return res.status(200).json({ data });
     } catch (err) {
@@ -40,16 +33,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'data must be an array' });
     }
     try {
-      const resp = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-Cache-Control-Max-Age': '0',
-        },
-        body: JSON.stringify(data),
+      const result = await put(blobPath, JSON.stringify(data), {
+        access: 'public',
+        contentType: 'application/json',
+        addRandomSuffix: false,
+        cacheControlMaxAge: 0,
       });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return res.status(200).json({ ok: true, count: data.length });
     } catch (err) {
       return res.status(500).json({ error: 'Write failed', detail: err.message });
