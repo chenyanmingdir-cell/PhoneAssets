@@ -1,4 +1,7 @@
-import { put, list } from '@vercel/blob';
+// Edge Config storage via Vercel REST API
+const EC_ID = 'ecfg_sl7xspbksjdoq4mnyag4t4sv1be3';
+const EC_URL = `https://edge-config.vercel.com/${EC_ID}`;
+const API_URL = `https://api.vercel.com/v1/edge-config/${EC_ID}/items`;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,15 +15,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing or invalid uid' });
   }
 
-  const blobPath = `assets/${uid}.json`;
+  const key = `assets_${uid}`;
 
   if (req.method === 'GET') {
     try {
-      const { blobs } = await list({ prefix: blobPath, limit: 1 });
-      const blob = blobs.find(b => b.pathname === blobPath);
-      if (!blob) return res.status(200).json({ data: [] });
-      const resp = await fetch(blob.url);
-      const data = await resp.json();
+      const resp = await fetch(`${EC_URL}/item/${key}?token=${process.env.EDGE_CONFIG_TOKEN}`);
+      if (resp.status === 404) return res.status(200).json({ data: [] });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const raw = await resp.text();
+      const data = raw ? JSON.parse(raw) : [];
       return res.status(200).json({ data });
     } catch (err) {
       return res.status(500).json({ error: 'Read failed', detail: err.message });
@@ -33,12 +36,17 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'data must be an array' });
     }
     try {
-      const result = await put(blobPath, JSON.stringify(data), {
-        access: 'public',
-        contentType: 'application/json',
-        addRandomSuffix: false,
-        cacheControlMaxAge: 0,
+      const resp = await fetch(API_URL, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${process.env.VERCEL_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: [{ operation: 'upsert', key, value: JSON.stringify(data) }],
+        }),
       });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`);
       return res.status(200).json({ ok: true, count: data.length });
     } catch (err) {
       return res.status(500).json({ error: 'Write failed', detail: err.message });
