@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#1a1410">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PhoneAssets">
+<title>PhoneAssets · 我的固定资产</title>
+<style>
+/* ===== FONTS ===== */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=DM+Mono:wght@400;500&display=swap');
+
+/* ===== RESET & VARS ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg-deep: #16110e;
+  --bg-surface: #1e1814;
+  --bg-card: #261f19;
+  --bg-elevated: #2e2620;
+  --gold: #c8a877;
+  --gold-dim: #8a7256;
+  --gold-light: #e4d0aa;
+  --gold-pale: #f5edd9;
+  --ink: #f0e6d8;
+  --ink-dim: #9a8e80;
+  --ink-muted: #6b5f55;
+  --red-soft: #c47a6b;
+  --green-soft: #7a9e7e;
+  --blue-soft: #7a8f9e;
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-elevated: 0 2px 4px rgba(0,0,0,0.5), 0 8px 32px rgba(0,0,0,0.4);
+  --font-display: 'Noto Serif SC', serif;
+  --font-mono: 'DM Mono', monospace;
+  --font-body: 'Noto Serif SC', serif;
+  --safe-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* ===== BASE ===== */
+html {
+  font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  background: var(--bg-deep);
+  color: var(--ink);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100dvh;
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, #2a2018 0%, transparent 60%),
+              radial-gradient(ellipse 60% 50% at 80% 90%, #1a1814 0%, transparent 55%),
+              var(--bg-deep);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: calc(var(--safe-bottom) + 100px);
+}
+
+/* ===== TEXTURE OVERLAY ===== */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ===== APP SHELL ===== */
+.app {
+  width: 100%;
+  max-width: 480px;
+  padding: 0 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== HEADER ===== */
+.header {
+  padding: 48px 0 8px;
+  position: relative;
+}
+
+.header-date {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--gold-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+}
+
+.header-title {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: var(--gold-light);
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+}
+
+.header-title span {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--ink-dim);
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+/* ===== TOTAL CARD ===== */
+.total-card {
+  background: linear-gradient(145deg, #2a2218 0%, #1e1812 100%);
+  border: 1px solid rgba(200,168,119,0.15);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin: 16px 0 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.total-card::after {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(200,168,119,0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.total-label {
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.total-amount {
+  font-family: var(--font-mono);
+  font-size: 2.6rem;
+  font-weight: 500;
+  color: var(--gold);
+  letter-spacing: -0.02em;
+}
+
+.total-amount::before {
+  content: '¥';
+  font-size: 1.4rem;
+  margin-right: 4px;
+  color: var(--gold-dim);
+}
+
+.total-meta {
+  display: flex;
+  gap: 24px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(200,168,119,0.08);
+}
+
+.total-meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.total-meta-label {
+  font-size: 0.65rem;
+  color: var(--ink-muted);
+  letter-spacing: 0.06em;
+}
+
+.total-meta-value {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--ink);
+  margin-top: 2px;
+}
+
+/* ===== CATEGORY GROUP ===== */
+.category-group {
+  margin-bottom: 28px;
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.category-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.category-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  background: rgba(200,168,119,0.08);
+  border: 1px solid rgba(200,168,119,0.1);
+}
+
+.category-name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.03em;
+}
+
+.category-count {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--ink-muted);
+  margin-left: 4px;
+}
+
+.category-subtotal {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--gold-dim);
+  letter-spacing: -0.01em;
+}
+
+.category-subtotal::before {
+  content: '¥';
+  font-size: 0.7rem;
+}
+
+.category-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ===== ASSET CARD ===== */
+.asset-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(200,168,119,0.06);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  position: relative;
+  transition: border-color 0.25s ease, background 0.25s ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.asset-card:active {
+  background: var(--bg-elevated);
+  border-color: rgba(200,168,119,0.2);
+}
+
+.asset-card-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.asset-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.asset-name {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.asset-date {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--ink-muted);
+  margin-top: 4px;
+  letter-spacing: 0.04em;
+}
+
+.asset-date::after {
+  content: ' · 已用 ';
+  color: var(--ink-muted);
+}
+
+.asset-duration {
+  font-family: var(--font-mono);
+  color: var(--blue-soft);
+}
+
+.asset-price {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--gold);
+  flex-shrink: 0;
+  margin-left: 14px;
+  letter-spacing: -0.02em;
+}
+
+.asset-price::before {
+  content: '¥';
+  font-size: 0.7rem;
+  color: var(--gold-dim);
+  margin-right: 1px;
+}
+
+/* ===== ACTIONS ON CARD ===== */
+.asset-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.asset-card:hover .asset-actions,
+.asset-card:focus-within .asset-actions {
+  opacity: 1;
+}
+
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(200,168,119,0.15);
+  background: var(--bg-elevated);
+  color: var(--ink-dim);
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-icon:active {
+  background: rgba(200,168,119,0.2);
+  color: var(--gold);
+  border-color: rgba(200,168,119,0.3);
+}
+
+.btn-icon.danger:active {
+  background: rgba(196,122,107,0.2);
+  color: var(--red-soft);
+  border-color: rgba(196,122,107,0.3);
+}
+
+/* ===== ADD BUTTON ===== */
+.fab {
+  position: fixed;
+  bottom: calc(var(--safe-bottom) + 24px);
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d4b67a 0%, #b8944a 100%);
+  border: none;
+  color: #1a1410;
+  font-size: 1.6rem;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(180,140,60,0.35), 0 1px 4px rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fab:active {
+  transform: scale(0.94);
+  box-shadow: 0 2px 8px rgba(180,140,60,0.3), 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.25s ease;
+}
+
+.modal-sheet {
+  background: var(--bg-surface);
+  border: 1px solid rgba(200,168,119,0.12);
+  border-bottom: none;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  padding: 28px 24px calc(var(--safe-bottom) + 20px);
+  animation: slideUp 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+}
+
+.modal-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(200,168,119,0.25);
+  border-radius: 2px;
+  margin: 0 auto 24px;
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin-bottom: 24px;
+  letter-spacing: 0.03em;
+}
+
+/* ===== FORM ===== */
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.form-input, .form-select {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid rgba(200,168,119,0.12);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
+.form-input:focus, .form-select:focus {
+  border-color: rgba(200,168,119,0.4);
+  box-shadow: 0 0 0 3px rgba(200,168,119,0.06);
+}
+
+.form-input::placeholder {
+  color: var(--ink-muted);
+  opacity: 0.6;
+}
+
+.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%239a8e80' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+.form-select option {
+  background: var(--bg-card);
+  color: var(--ink);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ===== FORM BUTTONS ===== */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.btn {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  border: none;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #d4b67a 0%, #b8944a 100%);
+  color: #1a1410;
+  box-shadow: 0 2px 8px rgba(180,140,60,0.25);
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(200,168,119,0.2);
+  color: var(--ink-dim);
+}
+
+.btn-secondary:active {
+  background: rgba(200,168,119,0.06);
+  color: var(--ink);
+}
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid rgba(196,122,107,0.25);
+  color: var(--red-soft);
+  font-size: 0.8rem;
+}
+
+.btn-danger:active {
+  background: rgba(196,122,107,0.1);
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-icon {
+  font-size: 3.5rem;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.empty-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--ink-dim);
+  margin-bottom: 8px;
+}
+
+.empty-desc {
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  line-height: 1.6;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.asset-card {
+  animation: cardIn 0.4s ease backwards;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(200,168,119,0.15);
+  border-radius: 2px;
+}
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-elevated);
+  border: 1px solid rgba(200,168,119,0.2);
+  color: var(--ink);
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 0.8rem;
+  z-index: 300;
+  font-family: var(--font-body);
+  box-shadow: var(--shadow-elevated);
+  animation: fadeIn 0.2s ease;
+  pointer-events: none;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (min-width: 481px) {
+  .app {
+    padding: 0 24px;
+  }
+  .header {
+    padding-top: 56px;
+  }
+  .asset-card:hover {
+    border-color: rgba(200,168,119,0.15);
+    background: var(--bg-elevated);
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="header">
+    <div class="header-date" id="headerDate"></div>
+    <h1 class="header-title">PhoneAssets<span>我的固定资产</span></h1>
+  </header>
+
+  <div class="total-card">
+    <div class="total-label">总资产价值</div>
+    <div class="total-amount" id="totalAmount">0</div>
+    <div class="total-meta">
+      <div class="total-meta-item">
+        <span class="total-meta-label">物品总数</span>
+        <span class="total-meta-value" id="totalCount">0</span>
+      </div>
+      <div class="total-meta-item">
+        <span class="total-meta-label">品类数</span>
+        <span class="total-meta-value" id="totalCategories">0</span>
+      </div>
+      <div class="total-meta-item">
+        <span class="total-meta-label">最早购入</span>
+        <span class="total-meta-value" id="earliestDate">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="categoryList"></div>
+
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">📦</div>
+    <div class="empty-title">还没有记录任何物品</div>
+    <div class="empty-desc">点击右下角的 + 按钮<br>开始记录你的第一件资产</div>
+  </div>
+</div>
+
+<button class="fab" id="fabBtn" aria-label="添加物品">+</button>
+
+<div id="modalContainer"></div>
+<div id="toastContainer"></div>
+
+<script>
+// ===== CONSTANTS =====
+const CATEGORIES = {
+  '📱 手机': '📱',
+  '💻 电脑': '💻',
+  '📟 平板': '📟',
+  '🎧 耳机': '🎧',
+  '📷 相机': '📷',
+  '⌚ 手表': '⌚',
+  '🛋️ 家居': '🛋️',
+  '👔 服饰': '👔',
+  '🎮 游戏': '🎮',
+  '🚗 出行': '🚗',
+  '📦 其他': '📦'
+};
+
+const CATEGORY_KEYS = Object.keys(CATEGORIES);
+const CATEGORY_ICONS = Object.fromEntries(
+  CATEGORY_KEYS.map(k => [k.replace(/^[^\s]+\s/, ''), CATEGORIES[k]])
+);
+
+const CATEGORY_DISPLAY_ICONS = {
+  '手机': '📱', '电脑': '💻', '平板': '📟', '耳机': '🎧',
+  '相机': '📷', '手表': '⌚', '家居': '🛋️', '服饰': '👔',
+  '游戏': '🎮', '出行': '🚗', '其他': '📦'
+};
+
+const STORAGE_KEY = 'phoneassets_data';
+
+// ===== STATE =====
+let assets = [];
+let editingId = null;
+
+// ===== STORAGE =====
+function loadAssets() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    assets = raw ? JSON.parse(raw) : [];
+  } catch {
+    assets = [];
+  }
+}
+
+function saveAssets() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
+}
+
+// ===== HELPERS =====
+function formatPrice(n) {
+  return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function getDurationMonths(dateStr) {
+  const start = new Date(dateStr);
+  const now = new Date();
+  const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+  return Math.max(0, months);
+}
+
+function formatDuration(months) {
+  if (months === 0) return '不足1月';
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  if (y === 0) return `${m}个月`;
+  if (m === 0) return `${y}年`;
+  return `${y}年${m}个月`;
+}
+
+function getCategoryKey(fullCategory) {
+  if (CATEGORY_KEYS.includes(fullCategory)) {
+    return fullCategory.replace(/^[^\s]+\s/, '');
+  }
+  return fullCategory;
+}
+
+function todayStr() {
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
+
+function formatDateCN(dateStr) {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function headerDateStr() {
+  const d = new Date();
+  const days = ['日','一','二','三','四','五','六'];
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 星期${days[d.getDay()]}`;
+}
+
+// ===== RENDER =====
+function renderAll() {
+  document.getElementById('headerDate').textContent = headerDateStr();
+
+  const total = assets.reduce((s, a) => s + (Number(a.price) || 0), 0);
+  document.getElementById('totalAmount').textContent = formatPrice(total);
+  document.getElementById('totalCount').textContent = assets.length;
+
+  const categories = new Set(assets.map(a => getCategoryKey(a.category)));
+  document.getElementById('totalCategories').textContent = categories.size;
+
+  if (assets.length > 0) {
+    const dates = assets.map(a => a.date).filter(Boolean).sort();
+    document.getElementById('earliestDate').textContent = dates.length ? formatDateCN(dates[0]) : '—';
+  } else {
+    document.getElementById('earliestDate').textContent = '—';
+  }
+
+  renderCategoryList();
+  document.getElementById('emptyState').style.display = assets.length === 0 ? 'block' : 'none';
+}
+
+function renderCategoryList() {
+  const container = document.getElementById('categoryList');
+  const grouped = {};
+
+  for (const a of assets) {
+    const key = getCategoryKey(a.category);
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(a);
+  }
+
+  // Sort by total value desc
+  const sortedGroups = Object.entries(grouped).sort(([, itemsA], [, itemsB]) => {
+    const sumB = itemsB.reduce((s, i) => s + (Number(i.price) || 0), 0);
+    const sumA = itemsA.reduce((s, i) => s + (Number(i.price) || 0), 0);
+    return sumB - sumA;
+  });
+
+  let html = '';
+  for (const [catName, items] of sortedGroups) {
+    const subtotal = items.reduce((s, i) => s + (Number(i.price) || 0), 0);
+    const icon = CATEGORY_DISPLAY_ICONS[catName] || '📦';
+
+    // Sort items within category by date desc
+    items.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    html += `<div class="category-group">`;
+    html += `<div class="category-header" onclick="this.nextElementSibling.classList.toggle('collapsed')">`;
+    html += `<div class="category-name-row">`;
+    html += `<div class="category-icon">${icon}</div>`;
+    html += `<span class="category-name">${catName}</span>`;
+    html += `<span class="category-count">${items.length}件</span>`;
+    html += `</div>`;
+    html += `<span class="category-subtotal">${formatPrice(subtotal)}</span>`;
+    html += `</div>`;
+    html += `<div class="category-items">`;
+
+    for (let i = 0; i < items.length; i++) {
+      const a = items[i];
+      const dur = getDurationMonths(a.date);
+      html += `
+        <div class="asset-card" style="animation-delay:${i * 0.04}s" onclick="editAsset('${a.id}')">
+          <div class="asset-actions">
+            <button class="btn-icon" onclick="event.stopPropagation(); editAsset('${a.id}')" title="编辑">✎</button>
+            <button class="btn-icon danger" onclick="event.stopPropagation(); deleteAsset('${a.id}')" title="删除">✕</button>
+          </div>
+          <div class="asset-card-inner">
+            <div class="asset-info">
+              <div class="asset-name">${escapeHtml(a.name)}</div>
+              <div class="asset-date">
+                ${formatDateCN(a.date)}
+                <span class="asset-duration">${formatDuration(dur)}</span>
+              </div>
+            </div>
+            <div class="asset-price">${formatPrice(a.price)}</div>
+          </div>
+        </div>`;
+    }
+
+    html += `</div></div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ===== MODAL =====
+function openModal(asset = null) {
+  editingId = asset ? asset.id : null;
+  const isEdit = !!asset;
+
+  const html = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-sheet" id="modalSheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">${isEdit ? '编辑物品' : '添加物品'}</div>
+        <form id="assetForm" onsubmit="handleSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">物品名称</label>
+            <input class="form-input" type="text" id="inputName" placeholder="例如：iPhone 16 Pro" value="${escapeHtml(asset?.name || '')}" required autocomplete="off">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">价格 (¥)</label>
+              <input class="form-input" type="number" id="inputPrice" placeholder="0" value="${asset?.price || ''}" min="0" step="0.01" required inputmode="decimal">
+            </div>
+            <div class="form-group">
+              <label class="form-label">购买日期</label>
+              <input class="form-input" type="date" id="inputDate" value="${asset?.date || todayStr()}" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">分类</label>
+            <select class="form-select" id="inputCategory">
+              ${CATEGORY_KEYS.map(k => {
+                const selected = asset && (asset.category === k || getCategoryKey(asset.category) === getCategoryKey(k));
+                return `<option value="${escapeHtml(k)}"${selected ? ' selected' : ''}>${k}</option>`;
+              }).join('')}
+            </select>
+          </div>
+          <div class="form-actions">
+            ${isEdit ? `<button type="button" class="btn btn-danger" onclick="deleteAsset('${asset.id}')">删除</button>` : ''}
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
+            <button type="submit" class="btn btn-primary">${isEdit ? '保存' : '添加'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('modalContainer').innerHTML = html;
+
+  // Close on overlay tap
+  document.getElementById('modalOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // Focus name input
+  setTimeout(() => {
+    const inp = document.getElementById('inputName');
+    if (inp) inp.focus();
+  }, 400);
+}
+
+function closeModal() {
+  document.getElementById('modalContainer').innerHTML = '';
+  editingId = null;
+}
+
+// ===== CRUD =====
+function handleSubmit(e) {
+  e.preventDefault();
+
+  const name = document.getElementById('inputName').value.trim();
+  const price = parseFloat(document.getElementById('inputPrice').value) || 0;
+  const date = document.getElementById('inputDate').value;
+  const category = document.getElementById('inputCategory').value;
+
+  if (!name || price < 0 || !date) return;
+
+  if (editingId) {
+    const idx = assets.findIndex(a => a.id === editingId);
+    if (idx !== -1) {
+      assets[idx] = { ...assets[idx], name, price, date, category };
+    }
+    showToast('已更新 ✓');
+  } else {
+    assets.push({
+      id: generateId(),
+      name,
+      price,
+      date,
+      category
+    });
+    showToast('已添加 ✓');
+  }
+
+  saveAssets();
+  closeModal();
+  renderAll();
+}
+
+function editAsset(id) {
+  const asset = assets.find(a => a.id === id);
+  if (asset) openModal(asset);
+}
+
+function deleteAsset(id) {
+  const asset = assets.find(a => a.id === id);
+  if (!asset) return;
+
+  if (confirm(`确定要删除「${asset.name}」吗？\n此操作不可撤销。`)) {
+    assets = assets.filter(a => a.id !== id);
+    saveAssets();
+    closeModal();
+    renderAll();
+    showToast('已删除');
+  }
+}
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => el.remove(), 300);
+  }, 1800);
+}
+
+// ===== EVENT LISTENERS =====
+document.getElementById('fabBtn').addEventListener('click', () => openModal());
+
+// ===== PWA =====
+function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+
+  const swCode = `
+const CACHE = 'phoneassets-v1';
+const URLS = ['/'];
+
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+});
+
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      return cached || fetch(e.request).then(resp => {
+        if (resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return resp;
+      }).catch(() => cached || new Response('Offline', {status: 503}));
+    })
+  );
+});
+`;
+
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+function setManifest() {
+  const manifest = {
+    name: 'PhoneAssets',
+    short_name: 'PhoneAssets',
+    description: '我的固定资产管理',
+    start_url: '.',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#1a1410',
+    theme_color: '#1a1410',
+    icons: [{
+      src: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="#1a1410"/><text x="96" y="110" text-anchor="middle" font-size="90" font-family="serif" fill="#c8a877">📦</text></svg>'),
+      sizes: '192x192',
+      type: 'image/svg+xml'
+    }]
+  };
+
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = URL.createObjectURL(blob);
+  document.head.appendChild(link);
+}
+
+// ===== INIT =====
+function init() {
+  setManifest();
+  registerSW();
+  loadAssets();
+  renderAll();
+}
+
+init();
+</script>
+</body>
+</html>
