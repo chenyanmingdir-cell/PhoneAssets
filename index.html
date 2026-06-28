@@ -304,18 +304,26 @@ body::before {
   font-family: var(--font-mono);
   font-size: 0.65rem;
   color: var(--ink-muted);
-  margin-top: 4px;
   letter-spacing: 0.04em;
-}
-
-.asset-date::after {
-  content: ' · 已用 ';
-  color: var(--ink-muted);
 }
 
 .asset-duration {
   font-family: var(--font-mono);
   color: var(--blue-soft);
+}
+
+.asset-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.asset-per-day {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--green-soft);
+  letter-spacing: 0.04em;
 }
 
 .asset-price {
@@ -770,6 +778,24 @@ function formatDuration(months) {
   return `${y}年${m}个月`;
 }
 
+function getDaysSince(dateStr) {
+  const start = new Date(dateStr);
+  const now = new Date();
+  const diff = now - start;
+  return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)));
+}
+
+function getCostPerDay(price, dateStr) {
+  const days = getDaysSince(dateStr);
+  return price / days;
+}
+
+function formatCostPerDay(price, dateStr) {
+  const cpd = getCostPerDay(price, dateStr);
+  if (cpd >= 1) return `¥${cpd.toFixed(1)}/天`;
+  return `¥${(cpd * 30).toFixed(1)}/月`;
+}
+
 function getCategoryKey(fullCategory) {
   if (CATEGORY_KEYS.includes(fullCategory)) {
     return fullCategory.replace(/^[^\s]+\s/, '');
@@ -854,6 +880,7 @@ function renderCategoryList() {
     for (let i = 0; i < items.length; i++) {
       const a = items[i];
       const dur = getDurationMonths(a.date);
+      const cpd = formatCostPerDay(a.price, a.date);
       html += `
         <div class="asset-card" style="animation-delay:${i * 0.04}s" onclick="editAsset('${a.id}')">
           <div class="asset-actions">
@@ -863,9 +890,10 @@ function renderCategoryList() {
           <div class="asset-card-inner">
             <div class="asset-info">
               <div class="asset-name">${escapeHtml(a.name)}</div>
-              <div class="asset-date">
-                ${formatDateCN(a.date)}
-                <span class="asset-duration">${formatDuration(dur)}</span>
+              <div class="asset-meta-row">
+                <span class="asset-date">${formatDateCN(a.date)}</span>
+                <span class="asset-duration">已用${formatDuration(dur)}</span>
+                <span class="asset-per-day">≈${cpd}</span>
               </div>
             </div>
             <div class="asset-price">${formatPrice(a.price)}</div>
