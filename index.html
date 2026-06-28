@@ -821,12 +821,17 @@ body::before {
 <div id="modalContainer"></div>
 <div id="toastContainer"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <script>
 // ===== SUPABASE =====
 const SUPABASE_URL = 'https://pqdrdpidyxxbwphstdpz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZHJkcGlkeXh4YndwaHN0ZHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDY2MTQsImV4cCI6MjA5NjIyMjYxNH0.Z5AfS0ZOIJ4b_WNG81YYvl5jegP2Y4kEuOo2XUqn8Wc';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabase = null;
+try {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch(e) {
+  console.warn('Supabase init failed, localStorage only');
+}
 
 // ===== CONSTANTS =====
 const CATEGORIES = {
@@ -897,7 +902,7 @@ function saveAssetsSilent() {
 // ===== SUPABASE SYNC =====
 async function syncToSupabase() {
   const uid = getUID();
-  if (!uid) return;
+  if (!uid || !supabase) return;
 
   setSyncStatus('syncing', '同步中...');
   try {
@@ -917,6 +922,7 @@ async function syncToSupabase() {
 }
 
 async function loadFromSupabase(uid) {
+  if (!supabase) return null;
   try {
     const { data, error } = await supabase
       .from('workspaces')
